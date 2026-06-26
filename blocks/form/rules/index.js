@@ -440,8 +440,16 @@ async function initializeRuleEngineWorker(formDef, renderHTMLForm) {
     const data = needsPrefill ? await fetchData(formDef?.id, window.location.search || '') : null;
     const ruleEngine = await import('./model/afb-runtime.js');
     const formDefWithData = { ...formDef, ...(data != null && { data }) };
-    const form = ruleEngine.createFormInstance(formDefWithData, undefined, LOG_LEVEL);
-    return renderHTMLForm(form.getState(true), data);
+    const afbForm = ruleEngine.createFormInstance(formDefWithData, undefined, LOG_LEVEL);
+    const formState = afbForm.getState(true);
+    const response = await renderHTMLForm(formState, data);
+    if (response?.form) {
+      // Wire DOM events to the model, same as the worker path does after restoreState.
+      // dataset.id must be set before loadRuleEngine keys into formModels.
+      response.form.dataset.id = formDef.id;
+      await loadRuleEngine(formState, response.form, response.captcha, response.generateFormRendition, data);
+    }
+    return { ...response, afbForm: formModels[formDef.id] ?? afbForm };
   }
   const myWorker = new Worker(`${window.hlx.codeBasePath}/blocks/form/rules/RuleEngineWorker.js`, { type: 'module' });
   // Pass the current URL to the worker for log level determination
@@ -475,7 +483,7 @@ async function initializeRuleEngineWorker(formDef, renderHTMLForm) {
         myWorker.postMessage({
           name: 'decorated',
         });
-        resolve(response);
+        resolve({ ...response, afbForm: null });
       }
 
       if (e.data.name === 'restoreState') {
@@ -528,7 +536,7 @@ export async function initAdaptiveForm(formDef, createForm) {
   preloadFunctionScripts(formDef?.properties?.customFunctionsPath, window.hlx?.codeBasePath);
   await registerCustomFunctions(formDef?.properties?.customFunctionsPath || '/blocks/form/functions.js', window.hlx?.codeBasePath);
   const response = await initializeRuleEngineWorker(formDef, createForm);
-  return response?.form;
+  return { form: response?.form, afbForm: response?.afbForm };
 }
 
 /**
