@@ -511,13 +511,16 @@ function loadFormCustomStyles(formDef) {
   }
 }
 
+// Submit action types that are handled by the submission service.
+function shouldRouteToSubmissionService(actionType) {
+  const SUPPORTED_ACTION_TYPES = ['spreadsheet', 'aep'];
+  return SUPPORTED_ACTION_TYPES.includes(actionType);
+}
+
 async function setupForm(formDef, { pathname, block, editMode = false } = {}) {
   const submitProps = formDef?.properties?.['fd:submit'];
   const actionType = submitProps?.actionName || formDef?.properties?.actionType;
-  const spreadsheetUrl = submitProps?.spreadsheet?.spreadsheetUrl
-    || formDef?.properties?.spreadsheetUrl;
-  // Add support for aep submit action
-  if ((actionType === 'spreadsheet' && spreadsheetUrl) || actionType === 'aep') {
+  if (shouldRouteToSubmissionService(actionType)) {
     // Check if we're in an iframe and use parent window path if available
     const iframePath = window.frameElement ? window.parent.location.pathname
       : window.location.pathname;
