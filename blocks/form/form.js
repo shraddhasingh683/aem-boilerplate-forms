@@ -1,6 +1,8 @@
 import { createOptimizedPicture, loadCSS } from '../../scripts/aem.js';
 import transferRepeatableDOM, { insertAddButton, insertRemoveButton } from './components/repeat/repeat.js';
-import { emailPattern, getSubmitBaseUrl, SUBMISSION_SERVICE } from './constant.js';
+import {
+  emailPattern, getSubmitBaseUrl, SUBMISSION_SERVICE, SUPPORTED_SUBMISSION_ACTION_TYPES,
+} from './constant.js';
 import GoogleReCaptcha from './integrations/recaptcha.js';
 import componentDecorator from './mappings.js';
 import { handleSubmit } from './submit.js';
@@ -511,10 +513,8 @@ function loadFormCustomStyles(formDef) {
   }
 }
 
-// Submit action types that are handled by the submission service.
 function shouldRouteToSubmissionService(actionType) {
-  const SUPPORTED_ACTION_TYPES = ['spreadsheet', 'aep'];
-  return SUPPORTED_ACTION_TYPES.includes(actionType);
+  return SUPPORTED_SUBMISSION_ACTION_TYPES.includes(actionType);
 }
 
 async function setupForm(formDef, { pathname, block, editMode = false } = {}) {
